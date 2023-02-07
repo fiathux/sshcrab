@@ -1,0 +1,160 @@
+#!/bin/bash
+
+# BACKEND_MODE=no
+_LIST_PATH="$HOME/.remotehosts"
+declare -A _NAMES
+declare -A _IGNORES
+
+# check file permission
+# args:
+#   1. file
+#   2. [check mode] (default:600)
+check_permission() {
+  if [ ! -f $1 ]; then
+    return 1
+  fi
+  local mode=600
+  local uid=`id -u`
+  local gid=`id -g`
+  if [ ! -z $2 ]; then
+    mode=$2
+  fi
+  local chkstat=(`stat -c "%a %g %u" $1`)
+  if [ $? != 0 ]; then
+    return 2
+  fi
+  if [ ${chkstat[0]} != $mode ]; then
+    return 10
+  elif [ ${chkstat[1]} != $uid ]; then 
+    return 11
+  elif [ ${chkstat[2]} != $gid ]; then
+    return 12
+  fi
+}
+
+# check permission for read hosts
+check_hosts_file() {
+  check_permission "$_LIST_PATH"
+  return $?
+}
+
+# check permission for read hosts, print help doc when failed.
+check_hosts_file_inta() {
+  check_hosts_file
+  retcode=$?
+  if [ $retcode -gt 1 ]; then
+    echo ""
+    echo "Permission failed for file: $_LIST_PATH - `
+      descript_permission $retcode`"
+    echo "  Group and User must be same as the current user that you logined"
+    echo "  File mode must be set to 600"
+    echo ""
+    return 1
+  fi
+  return 0
+}
+
+# descript return code for the permission check above
+descript_permission() {
+  case $1 in
+    1)
+      echo "File not found"
+      ;;
+    2)
+      echo "Failed to check file status"
+      ;;
+    10)
+      echo "Invalid file mode"
+      ;;
+    11)
+      echo "You aren't owned this file"
+      ;;
+    12)
+      echo "File is not under your group"
+      ;;
+    *)
+      echo "Unknown error"
+      ;;
+  esac
+}
+
+# check host list
+check_list() {
+  if [ -f "$_LIST_PATH" ]; then
+    local names_list
+    while read -r ln; do
+      if [ -z "$ln" ] ||[ "${ln:0:1}" == "#" ]; then
+        continue
+      fi
+      local item_name=$(echo "$ln"|awk '{print $1}')
+      if [ "${item_name:0:1}" == "!" ]; then
+        _IGNORES["${item_name:1}"]=yes
+        continue
+      fi
+      if [ "${_IGNORES["$item_name"]}" == "yes" ]; then
+        continue
+      fi
+      _NAMES["$item_name"]="$(echo "$ln"|awk '{print $2" "$3" "$4}')"
+      echo "$item_name"
+    done < "$_LIST_PATH"
+  fi
+  # check ssh config
+  if [ -f $HOME/.ssh/config ]; then
+    while read -r ln; do
+      if [ -z "${_NAMES["$ln"]}" ]; then
+        if [ "${_IGNORES["$ln"]}" == "yes" ]; then
+          continue
+        fi
+        _NAMES["$ln"]="$ln"
+        echo "$ln"
+      fi
+    done <<< $(cat $HOME/.ssh/config|grep ^Host|awk '{print $2}')
+  fi
+  if [ "${#_NAMES[@]}" == "0" ]; then
+    if [ "$BACKEND_MODE" != yes ]; then
+      echo "no host list found">&2
+    fi
+    return 1
+  fi
+}
+
+# split port and hostname
+split_host() {
+  IFS=":" read -ra host_sp <<<"$1"
+  # check IPv6
+  if [ "${#host_sp[@]}" == 1 ]; then
+    echo "$1"
+    return
+  elif [ "${#host_sp[@]}" -gt 2 ]; then
+    local tailhost_sp=`rev<<<"${host_sp[$((${#host_sp[@]}-2))]}"`
+    if [ "${1:0:1}" != "[" ] || [ "${tailhost_sp:0:1}" != "]" ]; then
+      echo "$1"
+      return
+    fi
+  fi
+  # split host and port
+  local port="${host_sp[$((${#host_sp[@]}-1))]}"
+  local re_num="^[0-9]+$"
+  if [ -z "$port" ] || [[ $re_num =~ "$port" ]]; then
+    echo "$1"
+    return
+  fi
+  echo "${1:0:$((${#1}-${#port}-1))}" "$port"
+}
+
+# list hosts name that filter with string perfix
+filter_names() {
+  check_hosts_file
+  if [ $? -gt 1 ]; then
+    return
+  fi
+  while read -r ln; do
+    if [ -z "$1" ]; then
+      echo "$ln"
+    elif [ ${#1} -gt ${#ln} ]; then
+      continue
+    elif [ "${ln:0:${#1}}" == "${1}" ]; then
+      echo "$ln"
+    fi
+  done <<< "$(check_list)"
+}

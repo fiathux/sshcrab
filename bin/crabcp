@@ -1,0 +1,166 @@
+#!/bin/bash
+
+source "$CRAB_PERFIX/share/sshcrab/common"
+
+_DEST=""
+_SRC=""
+declare -a _FLAGS
+
+# parse arguments
+parse_args() {
+  for i in $@; do
+    if [ ! -z "$_SRC" ]; then
+      if [ ! -z "$_DEST" ]; then
+        echo "expected argument: $i">&2
+        return 1
+      fi
+      if [ -z "$i" ]; then
+        echo "invalid target: $i">&2
+        return 1
+      fi
+      _DEST="$i"
+      continue
+    fi
+    case $i in
+      "-C"|"-r"|"-q"|"-v")
+        _FLAGS+=($i)
+        ;;
+      *)
+        if [ -z "$i" ] || [ "${i:0:1}" == "-" ]; then
+          echo "invalid argument: $i">&2
+          return 1
+        fi
+        _SRC="$i"
+        ;;
+    esac
+  done
+  # check targets
+  if [ -z "$_SRC" ]; then
+    echo "no source path specified">&2
+    return 1
+  fi
+  if [ -z "$_DEST" ]; then
+    echo "no destination path specified">&2
+    return 1
+  fi
+}
+
+# split host name from path
+retrieve_host() {
+  local regx="^[^/]+:.+"
+  if [[ "$1" =~ $regx ]]; then
+    cut -d":" -f1 <<< "$1"
+  fi
+}
+
+# split remote-path
+split_path() {
+  cut -d":" -f2- <<< "$1"
+}
+
+#
+get_scp_cmd() {
+  check_list>/dev/null
+  # check argumenmts
+  parse_args "${@:1}"
+  if [ "$?" != "0" ]; then
+    return 1
+  fi
+  local ret="scp ${_FLAGS[@]} -o StrictHostKeyChecking=no"
+  local translhost
+  local srchost="`retrieve_host "$_SRC"`"
+  if [ ! -z "$srchost" ]; then
+    translhost="$srchost"
+  fi 
+  local desthost="`retrieve_host "$_DEST"`"
+  if [ ! -z "$desthost"  ]; then
+    if [ ! -z "$translhost" ]; then
+      echo "only available one remote path">&2
+      return 1
+    else
+      translhost="$desthost"
+    fi
+  fi
+  # translate host name
+  local hostparam
+  local host
+  if [ ! -z "$translhost" ]; then
+    hostparam=(${_NAMES["$translhost"]})
+    host=(`split_host "${hostparam[0]}"`)
+    if [ -z "${host[0]}" ]; then
+      echo "no hostname specified - $translhost">&2
+      return 1
+    fi
+    if [ ! -z "${host[1]}" ]; then
+      ret="$ret -P ${host[1]}"
+    fi
+    # build auth arguments
+    if [ ! -z "${hostparam[2]}" ]; then
+      if [ "${hostparam[2]:0:1}" == "-" ]; then
+        ret="$ret -i \"${hostparam[2]:1}\""
+      else
+        local passdec=`base64 -d <<<"${hostparam[2]}"`
+        if [ "$?" != "0" ]; then
+          return 1
+        fi
+        ret="SSHPASS=\"`awk \
+          '{sub(/"/,"\\\"");print}'<<<"$passdec"`\" sshpass -e $ret"
+      fi
+    fi
+  fi
+  # source path
+  if [ -z "$srchost" ]; then
+    ret="$ret \"$_SRC\""
+  fi
+  # which need to translate
+  if [ ! -z "$translhost" ]; then
+    local sppath=`split_path $_SRC`
+    if [ ! -z "${hostparam[1]}" ]; then
+      ret="$ret ${hostparam[1]}@${host[0]}:\"$sppath\""
+    else
+      ret="$ret ${host[0]}:\"$sppath\""
+    fi
+  fi
+  # destination path
+  if [ -z "$desthost" ]; then
+    ret="$ret \"$_DEST\""
+  fi
+  echo $ret
+}
+
+# run scp command
+run_scp() {
+  local cmd=`get_scp_cmd "$@"`
+  if [ "$?" != 0 ]; then
+    return 1
+  fi
+  if [ "$CRAB_DRYRUN" == "yes" ]; then
+    echo "$cmd"
+  else
+    eval "$cmd"
+  fi
+}
+
+# show help document
+show_help() {
+  echo ""
+  echo Usage:
+  echo "`awk -F"/" '{print $NF}'<<<$0` [options...] <src> <dest>"
+  echo ""
+  echo "Supported options:"
+  echo "  -C    Enable compression"
+  echo "  -r    Recursively copy"
+  echo "  -q    Quiet mode"
+  echo "  -v    Verbose mode"
+  echo ""
+}
+
+check_hosts_file_inta
+if [ $? != 0 ]; then exit 1; fi
+
+if [ ${#@} == 0 ]; then
+  show_help
+  exit 0
+fi
+
+run_scp "$@"

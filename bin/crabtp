@@ -1,0 +1,107 @@
+#!/bin/bash
+
+source "$CRAB_PERFIX/share/sshcrab/common"
+
+declare -A _FLAGS
+
+# flags parse
+parse_flags() {
+  local last_opt
+  for i in $@; do
+    case $i in
+      "-C"|"-q"|"-v")
+        _FLAGS[${i:1}]=yes
+        ;;
+      *)
+        echo "invalid argument - $i">&2
+        return 1
+        ;;
+    esac
+  done
+}
+
+# generate command to connect host
+get_sftp_cmd() {
+  check_list>/dev/null
+  if [ -z "${_NAMES["$1"]}" ]; then
+    echo "no record - $1">&2
+    return 1
+  fi
+  # check argumenmts
+  parse_flags "${@:2}"
+  if [ "$?" != "0" ]; then
+    return 1
+  fi
+  local hostparam=(${_NAMES["$1"]})
+  local host=(`split_host "${hostparam[0]}"`)
+  if [ -z "${host[0]}" ]; then
+    echo "no hostname specified - $1">&2
+    return 1
+  fi
+  # build command
+  local ret="sftp -o StrictHostKeyChecking=no"
+  if [ ! -z "${hostparam[2]}" ]; then
+    if [ "${hostparam[2]:0:1}" == "-" ]; then
+      ret="$ret -i \"${hostparam[2]:1}\""
+    else
+      local passdec=`base64 -d <<<"${hostparam[2]}"`
+      if [ "$?" != "0" ]; then
+        return 1
+      fi
+      ret="SSHPASS=\"`awk \
+        '{sub(/"/,"\\\"");print}'<<<"$passdec"`\" sshpass -e $ret"
+    fi
+  fi
+  for i in ${!_FLAGS[@]}; do
+    ret="$ret -$i"
+  done
+  if [ ! -z "${host[1]}" ]; then
+    ret="$ret -p ${host[1]}"
+  fi
+  if [ ! -z "${hostparam[1]}" ]; then
+    ret="$ret ${hostparam[1]}@${host[0]}"
+  else
+    ret="$ret ${host[0]}"
+  fi
+  echo $ret
+}
+
+# run ssh command
+run_sftp() {
+  local cmd=`get_sftp_cmd "$@"`
+  if [ "$?" != 0 ]; then
+    return 1
+  fi
+  if [ "$CRAB_DRYRUN" == "yes" ]; then
+    echo "$cmd"
+  else
+    eval "$cmd"
+  fi
+}
+
+#
+show_help() {
+  echo ""
+  echo Usage:
+  echo "`awk -F"/" '{print $NF}'<<<$0` <host> [options...]"
+  echo ""
+  echo "Supported options:"
+  echo "  -C                Enable compression"
+  echo "  -q                Quiet mode"
+  echo "  -v                Verbose mode"
+  echo ""
+}
+
+check_hosts_file_inta
+if [ $? != 0 ]; then exit 1; fi
+
+# check arguments
+if [ -z "$1" ]; then
+  show_help
+  exit 0
+elif [ "${1:0:1}" == "-" ]; then
+  echo "invalid argument: $1"
+  exit 1
+fi
+
+run_sftp "$@"

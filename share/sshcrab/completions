@@ -1,0 +1,22 @@
+#!/bin/bash
+
+__sshcrab_completions_common_fltname() {
+  while read -r ln; do
+    COMPREPLY+=("$ln")
+  done < <(/bin/bash <<EOF
+  source "$CRAB_PERFIX/share/sshcrab/common"
+  filter_names "$1"
+EOF
+)
+}
+
+__sshcrab_completions_plug_crabto() {
+  __sshcrab_completions_common_fltname "$2"
+}
+
+__sshcrab_completions_plug_crabtp() {
+  __sshcrab_completions_common_fltname "$2"
+}
+
+complete -F __sshcrab_completions_plug_crabto crabto
+complete -F __sshcrab_completions_plug_crabtp crabtp

@@ -1,0 +1,146 @@
+#!/bin/bash
+
+source "$CRAB_PERFIX/share/sshcrab/common"
+
+declare -A _FLAGS
+
+# flags parse
+parse_flags() {
+  local last_opt
+  for i in $@; do
+    if [ ! -z $last_opt ]; then
+      _FLAGS["$last_opt"]="$i"
+      last_opt=""
+      continue
+    fi
+    case $i in
+      "-X"|"-Y")
+        _FLAGS[${i:1}]=yes
+        ;;
+      "-D"|"-L"|"-R")
+        last_opt=$i
+        ;;
+      *)
+        echo "invalid argument - $i">&2
+        return 1
+        ;;
+    esac
+  done
+  if [ ! -z $last_opt ]; then
+    echo "incomplete argument -$last_opt">&2
+    return 1
+  fi
+}
+
+# generate command to connect host
+get_ssh_cmd() {
+  check_list>/dev/null
+  if [ -z "${_NAMES["$1"]}" ]; then
+    echo "no record - $1">&2
+    return 1
+  fi
+  # check argumenmts
+  parse_flags "${@:2}"
+  if [ "$?" != "0" ]; then
+    return 1
+  fi
+  local hostparam=(${_NAMES["$1"]})
+  local host=(`split_host "${hostparam[0]}"`)
+  if [ -z "${host[0]}" ]; then
+    echo "no hostname specified - $1">&2
+    return 1
+  fi
+  # build command
+  local ret="ssh -o StrictHostKeyChecking=no"
+  if [ ! -z "${hostparam[2]}" ]; then
+    if [ "${hostparam[2]:0:1}" == "-" ]; then
+      ret="$ret -i \"${hostparam[2]:1}\""
+    else
+      local passdec=`base64 -d <<<"${hostparam[2]}"`
+      if [ "$?" != "0" ]; then
+        return 1
+      fi
+      ret="SSHPASS=\"`awk \
+        '{sub(/"/,"\\\"");print}'<<<"$passdec"`\" sshpass -e $ret"
+    fi
+  fi
+  for i in ${!_FLAGS[@]}; do
+    if [ "${i:0:1}" == "-" ]; then
+      ret="$ret $i \"${_FLAGS[$i]}\""
+    else
+      ret="$ret -$i"
+    fi
+  done
+  if [ ! -z "${host[1]}" ]; then
+    ret="$ret -p ${host[1]}"
+  fi
+  if [ ! -z "${hostparam[1]}" ]; then
+    ret="$ret ${hostparam[1]}@${host[0]}"
+  else
+    ret="$ret ${host[0]}"
+  fi
+  echo $ret
+}
+
+# run ssh command
+run_ssh() {
+  local cmd=`get_ssh_cmd "$@"`
+  if [ "$?" != 0 ]; then
+    return 1
+  fi
+  if [ "$CRAB_DRYRUN" == "yes" ]; then
+    echo "$cmd"
+  else
+    eval "$cmd"
+  fi
+}
+
+#
+show_help() {
+  echo ""
+  echo Usage:
+  echo "`awk -F"/" '{print $NF}'<<<$0` <host> [options...]"
+  echo ""
+  echo "Supported options:"
+  echo "  -D <bind>         Enable socks"
+  echo "  -L <port map>     Local port forward"
+  echo "  -R <port map>     Remote port forward"
+  echo "  -X                Enable X11 forward"
+  echo "  -Y                Enable Wayland forward"
+  show_all 15
+}
+
+# show all hosts
+show_all() {
+  echo ""
+  echo "Allowed hosts:"
+  local item_no=0
+  while read -r ln; do
+    if [ $1 != "0" ] && [ $item_no -ge $1 ]; then
+      echo "  ... (use --list to show all hosts)"
+      break
+    fi 
+    echo "  - $ln"
+    item_no=$(($item_no+1))
+  done <<< $(check_list)
+  echo ""
+}
+
+check_hosts_file_inta
+if [ $? != 0 ]; then exit 1; fi
+
+# check arguments
+if [ -z "$1" ]; then
+  show_help
+  exit 0
+elif [ "${1:0:1}" == "-" ]; then
+  if [ "$1" == "--list" ]; then
+    show_all 0
+    exit 0
+  else
+    echo "invalid argument: $1"
+    exit 1
+  fi
+fi
+
+run_ssh "$@"

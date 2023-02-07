@@ -1,0 +1,18 @@
+# SSHCrab Hosts config
+#
+# Fields:
+# Name    Address    User    Auth
+#
+# A 'Name' which start with a excalmatory (!) means ignore it under following
+# list. ignored names will effected for .ssh/config as well
+#
+# The 'Auth' can be a specified as below:
+#     - A password: use base64 encoded
+#     - An identity file: start with a dash (-)
+#
+# eg.
+# !github.com
+# host0  domain.local       root  MTIzNDU2NzgK
+# host1  domain.local:9022  user  -$HOME/.ssh/your-identity
+#
+
