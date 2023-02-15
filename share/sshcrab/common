@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # BACKEND_MODE=no
-_LIST_PATH="$HOME/.remotehosts"
+_LIST_PATH="$HOME/.sshcrab_hosts"
 declare -A _NAMES
 declare -A _IGNORES
 

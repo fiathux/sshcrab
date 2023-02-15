@@ -1,9 +1,7 @@
-#!/bin/bash
+#!/bin/zsh
 
 __sshcrab_completions_common_fltname() {
-  while read -r ln; do
-    COMPREPLY+=("$ln")
-  done < <(/bin/bash <<EOF
+  compadd $(/bin/bash <<EOF
   source "$CRAB_PREFIX/share/sshcrab/common"
   filter_names "$1"
 EOF
@@ -18,5 +16,6 @@ __sshcrab_completions_plug_crabtp() {
   __sshcrab_completions_common_fltname "$2"
 }
 
-complete -F __sshcrab_completions_plug_crabto crabto
-complete -F __sshcrab_completions_plug_crabtp crabtp
+
+compdef __sshcrab_completions_plug_crabto crabto
+compdef __sshcrab_completions_plug_crabtp crabtp

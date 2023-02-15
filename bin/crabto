@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source "$CRAB_PERFIX/share/sshcrab/common"
+source "$CRAB_PREFIX/share/sshcrab/common"
 
 declare -A _FLAGS
 

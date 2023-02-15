@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source "$CRAB_PERFIX/share/sshcrab/common"
+source "$CRAB_PREFIX/share/sshcrab/common"
 
 _DEST=""
 _SRC=""
@@ -68,9 +68,11 @@ get_scp_cmd() {
   fi
   local ret="scp ${_FLAGS[@]} -o StrictHostKeyChecking=no"
   local translhost
+  local translhost_path
   local srchost="`retrieve_host "$_SRC"`"
   if [ ! -z "$srchost" ]; then
     translhost="$srchost"
+    translhost_path=`split_path $_SRC`
   fi 
   local desthost="`retrieve_host "$_DEST"`"
   if [ ! -z "$desthost"  ]; then
@@ -79,6 +81,7 @@ get_scp_cmd() {
       return 1
     else
       translhost="$desthost"
+      translhost_path=`split_path $_DEST`
     fi
   fi
   # translate host name
@@ -114,11 +117,10 @@ get_scp_cmd() {
   fi
   # which need to translate
   if [ ! -z "$translhost" ]; then
-    local sppath=`split_path $_SRC`
     if [ ! -z "${hostparam[1]}" ]; then
-      ret="$ret ${hostparam[1]}@${host[0]}:\"$sppath\""
+      ret="$ret ${hostparam[1]}@${host[0]}:\"$translhost_path\""
     else
-      ret="$ret ${host[0]}:\"$sppath\""
+      ret="$ret ${host[0]}:\"$translhost_path\""
     fi
   fi
   # destination path
