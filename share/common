@@ -1,7 +1,13 @@
 #!/bin/bash
 
 # BACKEND_MODE=no
-_LIST_PATH="$HOME/.sshcrab_hosts"
+if [ -f "$HOME/.crabhosts" ]; then
+  _LIST_PATH="$HOME/.crabhosts"
+elif [ -f "$XDG_CONFIG_HOME/sshcrab/crabhosts" ]; then
+  _LIST_PATH="$XDG_CONFIG_HOME/sshcrab/crabhosts"
+else
+  _LIST_PATH="$HOME/.config/sshcrab/crabhosts"
+fi
 declare -A _NAMES
 declare -A _IGNORES
 

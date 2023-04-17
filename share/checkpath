@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# check if the path is already in the PATH
+check_path() {
+  local path_list=$(echo $PATH | cut -d '=' -f 2 | tr ':' ' ')
+  for p in $path_list; do
+    [ "$p" = "$CRAB_PREFIX/bin" ] && return 0
+  done
+  return 1
+}
+
+# add the path to the PATH
+if ! check_path; then
+  echo "$CRAB_PREFIX/bin:$PATH"
+else
+  echo $PATH
+fi
