@@ -2,10 +2,12 @@
 
 __sshcrab_completions_common_fltname() {
   while read -r ln; do
-    COMPREPLY+=("$ln")
+    if [ ! -z "$ln" ]; then
+      COMPREPLY+=("$ln")
+    fi
   done < <(/bin/bash <<EOF
   source "$CRAB_PREFIX/share/sshcrab/common"
-  filter_names "$1"
+  BACKEND_MODE=yes filter_names "$1"
 EOF
 )
 }
