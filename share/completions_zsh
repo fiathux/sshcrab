@@ -3,7 +3,7 @@
 __sshcrab_completions_common_fltname() {
   compadd $(/bin/bash <<EOF
   source "$CRAB_PREFIX/share/sshcrab/common"
-  filter_names "$1"
+  BACKEND_MODE=yes filter_names "$1"
 EOF
 )
 }
@@ -16,6 +16,10 @@ __sshcrab_completions_plug_crabtp() {
   __sshcrab_completions_common_fltname "$2"
 }
 
+if ! type compdef>/dev/null; then
+  autoload -Uz compinit
+  compinit
+fi
 
 compdef __sshcrab_completions_plug_crabto crabto
 compdef __sshcrab_completions_plug_crabtp crabtp

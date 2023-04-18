@@ -121,18 +121,18 @@ install() {
   make_path
   while read ln; do
     install_one_script $ln
-    echo "$ln" >> $RES_PATH/installed_list
+    echo "$ln" >> "$RES_PATH/installed_list"
   done < <(ls ./bin)
   cp -r ./share/* $RES_PATH
   check_path_for_bash
   check_path_for_zsh
-  if [ $CONFIG_PATH = $HOME ]; then
-    cp ./share/crabhosts_example $CONFIG_PATH/.crabhosts
-    chmod 600 $CONFIG_PATH/.crabhosts
+  if [ "$CONFIG_PATH" = "$HOME" ]; then
+    cp -n "./share/crabhosts_example" "$CONFIG_PATH/.crabhosts"
+    chmod 600 "$CONFIG_PATH/.crabhosts"
     echo "HINT: you can use '$HOME/.crabhosts' to edit your hosts file.">&2
   else
-    cp ./share/crabhosts_example $CONFIG_PATH/crabhosts
-    chmod 600 $CONFIG_PATH/crabhosts
+    cp -n "./share/crabhosts_example" "$CONFIG_PATH/crabhosts"
+    chmod 600 "$CONFIG_PATH/crabhosts"
     echo "HINT: you can use '$CONFIG_PATH/crabhosts' to edit your hosts file.">&2
   fi
   echo "install success"
@@ -140,14 +140,14 @@ install() {
 
 # do remove
 uninstall() {
-  if [ ! -f $RES_PATH/installed_list ]; then
+  if [ ! -f "$RES_PATH/installed_list" ]; then
     echo "sshcrab has not been installed">&2
     return 1
   fi
   while read ln; do
-    rm -f $BIN_PATH/$ln
-  done < $RES_PATH/installed_list
-  rm -rf $RES_PATH/
+    rm -f "$BIN_PATH/$ln"
+  done < "$RES_PATH/installed_list"
+  rm -rf "$RES_PATH/"
   remove_bash_plugin
   remove_zsh_plugin
   echo "remove success"
