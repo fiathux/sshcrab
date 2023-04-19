@@ -22,7 +22,7 @@ Installer will find below file to install Shell completion plugins:
 - For BASH: `~/.profile` or `~/.bash_profile`
 - For ZSH: `~/.zshrc`
 
-If file not exist, plugins and environment will not be configure.
+If file not exist, plugins and environment will not be configure on your user.
 
 ### Install
 
@@ -44,13 +44,13 @@ PREFIX=/usr/local bash ./install.sh install
 bash ./install.sh remove
 ```
 
-If tools installed with PREFIX. you need apply same value on doing uninstall as
-well.
+If tools be installed with a PREFIX. you need apply same value on doing
+uninstall as well.
 
-### Manually use configure
+### Manually config of completion
 
 if BASH profile or zshrc are not exists before install. you need manually
-config your user after installed.
+configure completion and environment on your user after installed.
 
 for BASH, append code below into your bash profile:
 
@@ -75,7 +75,7 @@ source <PREFIX>/share/sshcrab/sshcrab_zsh_plugin
 ### Config
 
 sshcrab supported read hosts from `~/.ssh/config`. also you can use sshcrab
-style config file. tools will find file in order by path below:
+style config file. tools will this find file in order by path below:
 
 1. `~/.crabhosts`
 1. `$XDG_CONFIG_HOME/sshcrab/crabhosts`
