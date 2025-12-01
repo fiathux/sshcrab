@@ -116,30 +116,30 @@ host3  192.168.1.3  user  -$HOME/.ssh/your-identity
 
 ```shell
 # login to a server
-crabto alias
+cbto alias
 
 # login with X11 forward
-crabto alias -X
+cbto alias -X
 
 # login with Wayland forward
-crabto alias -Y
+cbto alias -Y
 
 # login with tunnel
-crabto alias -L 127.0.0.1:1000:127.0.0.1:100
+cbto alias -L 127.0.0.1:1000:127.0.0.1:100
 
 # copy file to remote
-crabcp ./localfile alias:~/
+cbcp ./localfile alias:~/
 
 # copy file from remote
-crabcp alias:~/remotefile ./
+cbcp alias:~/remotefile ./
 
 # copy directory
-crabcp -r ./some_path alias:~/
+cbcp -r ./some_path alias:~/
 
 # sftp login
-crabtp alias
+cbtp alias
 
 # use env CRAB_DRYRUN to show raw-command without execution
-CRAB_DRYRUN=yes crabto alias
+CRAB_DRYRUN=yes cbto alias
 ```
 

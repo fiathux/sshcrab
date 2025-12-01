@@ -21,5 +21,5 @@ if ! type compdef>/dev/null; then
   compinit
 fi
 
-compdef __sshcrab_completions_plug_crabto crabto
-compdef __sshcrab_completions_plug_crabtp crabtp
+compdef __sshcrab_completions_plug_crabto cbto
+compdef __sshcrab_completions_plug_crabtp cbtp

@@ -20,5 +20,5 @@ __sshcrab_completions_plug_crabtp() {
   __sshcrab_completions_common_fltname "$2"
 }
 
-complete -F __sshcrab_completions_plug_crabto crabto
-complete -F __sshcrab_completions_plug_crabtp crabtp
+complete -F __sshcrab_completions_plug_crabto cbto
+complete -F __sshcrab_completions_plug_crabtp cbtp

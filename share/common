@@ -107,6 +107,9 @@ check_list() {
   # check ssh config
   if [ -f $HOME/.ssh/config ]; then
     while read -r ln; do
+      if [ -z "$ln" ]; then
+        continue
+      fi
       if [ -z "${_NAMES["$ln"]}" ]; then
         if [ "${_IGNORES["$ln"]}" == "yes" ]; then
           continue
@@ -114,7 +117,7 @@ check_list() {
         _NAMES["$ln"]="$ln"
         echo "$ln"
       fi
-    done <<< $(cat $HOME/.ssh/config|grep ^Host|awk '{print $2}')
+    done <<< $(cat $HOME/.ssh/config|grep -i ^host|awk '{print $2}')
   fi
   if [ "${#_NAMES[@]}" == "0" ]; then
     if [ "$BACKEND_MODE" != yes ]; then
