@@ -3,14 +3,21 @@
 source "$CRAB_PREFIX/share/sshcrab/common"
 
 declare -A _FLAGS
+declare -a _TAIL_CMD
 
 # flags parse
 parse_flags() {
   local last_opt
+  local has_tail_cmd
   for i in $@; do
+    count_arg=$(($count_arg+1))
     if [ ! -z $last_opt ]; then
       _FLAGS["$last_opt"]="$i"
       last_opt=""
+      continue
+    fi
+    if [ ! -z $has_tail_cmd ]; then
+      _TAIL_CMD+="\'$i\' "
       continue
     fi
     case $i in
@@ -19,6 +26,9 @@ parse_flags() {
         ;;
       "-D"|"-L"|"-R")
         last_opt=$i
+        ;;
+      "--")
+        has_tail_cmd=yes
         ;;
       *)
         echo "invalid argument - $i">&2
@@ -79,6 +89,9 @@ get_ssh_cmd() {
   else
     ret="$ret ${host[0]}"
   fi
+  if [ ${#_TAIL_CMD[@]} -gt 0 ]; then
+    ret="$ret ${_TAIL_CMD[@]}"
+  fi
   echo $ret
 }
 
@@ -107,6 +120,8 @@ show_help() {
   echo "  -R <port map>     Remote port forward"
   echo "  -X                Enable X11 forward"
   echo "  -Y                Enable Wayland forward"
+  echo "  --                Following arguments are treated as remote command"
+  echo ""
   show_all 15
 }
 

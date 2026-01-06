@@ -116,30 +116,33 @@ host3  192.168.1.3  user  -$HOME/.ssh/your-identity
 
 ```shell
 # login to a server
-cbto alias
+cbto <alias>
 
 # login with X11 forward
-cbto alias -X
+cbto <alias> -X
 
 # login with Wayland forward
-cbto alias -Y
+cbto <alias> -Y
 
 # login with tunnel
-cbto alias -L 127.0.0.1:1000:127.0.0.1:100
+cbto <alias> -L 127.0.0.1:1000:127.0.0.1:100
+
+# Run remote commands
+cbto <alias> -- /bin/ping 192.168.0.1
 
 # copy file to remote
-cbcp ./localfile alias:~/
+cbcp ./localfile <alias>:~/
 
 # copy file from remote
-cbcp alias:~/remotefile ./
+cbcp <alias>:~/remotefile ./
 
 # copy directory
-cbcp -r ./some_path alias:~/
+cbcp -r ./some_path <alias>:~/
 
 # sftp login
-cbtp alias
+cbtp <alias>
 
 # use env CRAB_DRYRUN to show raw-command without execution
-CRAB_DRYRUN=yes cbto alias
+CRAB_DRYRUN=yes cbto <alias>
 ```
 
